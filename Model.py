@@ -25,7 +25,7 @@ class ExtractiveSummary:
         for word in words:
             if word in self.w2v_model.wv.vocab and word not in self.stop_words:
                 word_vec = self.w2v_model.wv[word]
-                weight = alpha / (alpha + self.frequence.get(word, self.max_fre))
+                weight = alpha / (alpha + self.frequency.get(word, self.max_fre))
                 sentence_vector += weight * word_vec
         sentence_vector /= len(words)
         return sentence_vector
