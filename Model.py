@@ -1,6 +1,7 @@
 import jieba
 import re
 import numpy as np
+import networkx
 from sklearn.metrics.pairwise import cosine_similarity
 
 
@@ -63,12 +64,39 @@ class ExtractiveSummary:
         summary_len = 0
         for sentence, i in ranked:
             if summary_len > self.max_out:
-                return summary
+                summary = sorted(zip(summary, index), key=lambda x: x[1], reverse=False)
+                summary = [x[0] for x in summary]
+                return ','.join(summary)
             index.append(i)
             summary.append(sentence)
             summary_len += len(sentence)
-        summary = sorted(summary, key=lambda x: index[x], reverse=False)
+        summary = sorted(zip(summary, index), key=lambda x: x[1], reverse=False)
+        summary = [x[0] for x in summary]
         return ','.join(summary)
+
+    def get_sentence_graph(self, sentences, window=3):
+        graph = networkx.Graph()
+        for i, sentence in enumerate(sentences):
+            connection = [(sentence, sentences[index]) for index in range(i-window, i+window)
+                          if i-window >= 0 and i+window < len(sentences)]
+            graph.add_edges_from(connection)
+        return graph
+
+    def get_textrank_summary(self, text):
+        sentences = self.split_sentences(text)
+        graph = self.get_sentence_graph(sentences)
+        ranking = networkx.pagerank(graph)
+        ranking_sentence = sorted(ranking.items(), key=lambda x: x[1], reverse=True)
+        summary_len = 0
+        candidate = set()
+        for sentence, _ in ranking_sentence:
+            if summary_len > self.max_out:
+                break
+            candidate.add(sentence)
+            summary_len += len(sentence)
+        summary = [x for x in sentences if x in candidate]
+        return ','.join(summary)
+
 
 
 
